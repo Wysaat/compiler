@@ -8,7 +8,7 @@
 ;
 %macro open 1
 section .data
-        fname db %1
+        fname db %1, 0
 section .text
         mov    eax, 5
         mov    ebx, fname
