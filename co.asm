@@ -32,16 +32,15 @@ init:
     int    0x80
     mov    ebp, eax
 
-    ; if outfile.out exists, open it
-    mov    eax, 5
+delete:
+    ; delete outfile.out
+    ; no matter it exists or not
+    mov    eax, 10
     mov    ebx, outfile
-    mov    ecx, 1
     int    0x80
-    mov    edi, eax
-    cmp    eax, 0
-    jg     read
 
-    ; else create it
+    ; then create it
+create:
     mov    eax, 8
     mov    ebx, outfile
     mov    ecx, 0q700
