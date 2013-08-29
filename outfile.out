@@ -1,6 +1,10 @@
 mov eax, 3
-3mov eax,  
-mov eax, +
-+mov eax,  
-mov eax, 2
-2
+mov ebx, 2
+sub eax, ebx
+mov eax, 9
+mov ebx, 8
+add eax, ebx
+mov eax, 6
+div 4
+mov eax, 7
+mul 5
