@@ -47,7 +47,29 @@ create:
     int    0x80
     mov    edi, eax
 
-read:
+    skip_space:
+    mov    eax, 3
+    mov    ebx, ebp
+    mov    ecx, buffer
+    mov    edx, bufflen
+    int    0x80
+    cmp    eax, 0x20
+    je     skip_space
+    ; first nonspace is read
+    jmp    skip_space
+
+    ; look at the operator
+    ; add(0x2b), sub(0x2d), mul(0x2a), div(0x2f)
+    cmp    buffer, 0x2b
+    je     add
+    cmp    buffer, 0x2d
+    je     sub
+    cmp    buffer, 0x2a
+    je     mul
+    cmp    buffer, 0x2f
+    je     div
+
+precalc:
     mov    eax, 3
     mov    ebx, ebp
     mov    ecx, buffer
@@ -78,7 +100,22 @@ read:
 
 skip_space:
     cmp    byte [buffer], 0x20
-    je     read
+    je     skip_space
+
+calcjudge:
+    ; read
+    mov    eax, 3
+    mov    ebx, ebp
+    mov    ecx, buffer
+    mov    edx, bufflen
+    int    0x80
+    cmp    eax, 0
+    je     exit
+    jl     error
+
+    ; add(0x2b) or sub(0x2d)
+    cmp    byte [buffer], 0x2b
+    je     
 
 write:
     mov    eax, 4
