@@ -6,5 +6,5 @@ mov ebx, 8
 add eax, ebx
 mov eax, 6
 div 4
-mov eax, 7
-mul 5
+mov eax, 8
+mul 1

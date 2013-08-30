@@ -31,6 +31,47 @@ section .bss
     buffer resb bufflen
 
 section .text
+
+;-----------------------------------------------
+; readc:    read a single character from infile
+;
+%macro readc 0
+    mov    eax, 3
+    mov    ebx, ebp
+    mov    ecx, buffer
+    mov    edx, bufflen
+    int    0x80
+%endmacro
+
+;-----------------------------------------------
+; printc:    print n characters to outfile
+; in: pointer to characters in %1,
+;     number of characters in %2
+;
+%macro printn 2
+    mov    eax, 4
+    mov    ebx, edi
+    mov    ecx, %1
+    mov    edx, %2
+    int    0x80
+%endmacro
+
+;-----------------------------------------------
+; lookc:    read a single character and
+;           ignore the spaces and newlines
+;           and jump to exit if end of file
+;
+%macro lookc 0
+  %%read:
+    readc
+    cmp    eax, 0
+    je     exit
+    cmp    byte [buffer], 0x20
+    je     %%read
+    cmp    byte [buffer], 0xa
+    je     %%read
+%endmacro
+
     global _start
 
 _start:
@@ -67,48 +108,15 @@ create:
 
 
 precalc:
-    mov    eax, 3
-    mov    ebx, ebp
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-    cmp    eax, 0
-    ;;; end of file
-    je     exit    
-    cmp    byte [buffer], 0x20
-    je     precalc
-    cmp    byte [buffer], 0xa
-    je     precalc
+    lookc
 
     ; print("mov eax, ", buffer, "\n")
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, str1
-    mov    edx, str1_len
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, eol
-    mov    edx, eollen
-    int    0x80
+    printn str1, str1_len
+    printn buffer, bufflen
+    printn eol, eollen
 
 calcjudge:
-    mov    eax, 3
-    mov    ebx, ebp
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-    cmp    byte [buffer], 0x20
-    je     calcjudge
-    cmp    byte [buffer], 0xa
-    je     calcjudge
+    lookc
 
     ; add(0x2b), sub(0x2d), mul(0x2a), div(0x2f)
     cmp    byte [buffer], 0x2b
@@ -122,161 +130,59 @@ calcjudge:
     jmp    error
 
 add:
-    mov    eax, 3
-    mov    ebx, ebp
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-    cmp    byte [buffer], 0x20
-    je     add
-    cmp    byte [buffer], 0xa
-    je     add
+    lookc
 
     ; print("mov ebx, ", buffer, "\n")
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, str2
-    mov    edx, str2_len
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, eol
-    mov    edx, eollen
-    int    0x80
+    printn str2, str2_len
+    printn buffer, bufflen
+    printn eol, eollen
 
     ; print("add eax, ebx", "\n")
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, stradd
-    mov    edx, stradd_len
-    int    0x80
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, eol
-    mov    edx, eollen
-    int    0x80
+    printn stradd, stradd_len
+    printn eol, eollen
 
     ; add is OK
     jmp    precalc
 
 sub:
-    mov    eax, 3
-    mov    ebx, ebp
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-    cmp    byte [buffer], 0x20
-    je     sub
-    cmp    byte [buffer], 0xa
-    je     sub
+    lookc
 
     ; print("mov ebx, ", buffer, "\n")
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, str2
-    mov    edx, str2_len
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, eol
-    mov    edx, eollen
-    int    0x80
+    printn str2, str2_len
+    printn buffer, bufflen
+    printn eol, eollen
 
     ; print("sub eax, ebx", "\n")
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, strsub
-    mov    edx, strsub_len
-    int    0x80
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, eol
-    mov    edx, eollen
-    int    0x80
+    printn strsub, strsub_len
+    printn eol, eollen
 
     ; sub is OK
     jmp    precalc
 
-
 mul:
-    mov    eax, 3
-    mov    ebx, ebp
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-    cmp    byte [buffer], 0x20
-    je     mul
-    cmp    byte [buffer], 0xa
-    je     mul
+    lookc
 
     ; print("mul eax, ", buffer, "\n")
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, strmul
-    mov    edx, strmul_len
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, eol
-    mov    edx, eollen
-    int    0x80
+    printn strmul, strmul_len
+    printn buffer, bufflen
+    printn eol, eollen
 
     ; mul is OK
     jmp    precalc
 
 div:
-    mov    eax, 3
-    mov    ebx, ebp
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-    cmp    byte [buffer], 0x20
-    je     div
-    cmp    byte [buffer], 0xa
-    je     div
+    lookc
 
     ; print("div ", buffer, "\n")
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, strdiv
-    mov    edx, strdiv_len
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, buffer
-    mov    edx, bufflen
-    int    0x80
-
-    mov    eax, 4
-    mov    ebx, edi
-    mov    ecx, eol
-    mov    edx, eollen
-    int    0x80
+    printn strdiv, strdiv_len
+    printn buffer, bufflen
+    printn eol, eollen
 
     ; div is OK
     jmp    precalc
+
+;////////////////////////////////////////////////
+;////////////////////////////////////////////////
 
 error:
     mov    eax, 4
