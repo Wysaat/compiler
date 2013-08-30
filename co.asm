@@ -79,6 +79,8 @@ section .text
 %macro lookc 0
   %%read:
     readc
+    cmp    eax, 0
+    je     exit
     cmp    byte [buffer], 0x20
     je     %%read
     cmp    byte [buffer], 0xa
@@ -101,11 +103,31 @@ section .text
     cmp    byte [buffer], 0x2f
 %endmacro
 
+%macro lpap 0
+    cmp    byte [buffer], 0x28
+%endmacro
+
+%macro rpap 0
+    cmp    byte [buffer], 0x29
+%endmacro
+
+%macro semicolonp 0
+    cmp    byte [buffer], 0x3b
+%endmacro
+
 factor:
     lookc
+    lpap
+    jne    .nopa
+    call   expression
+    rpap
+    je     .end
+    jne    error
+  .nopa:
     printn str1, str1_len
     printn buffer, bufflen
     printn eol, eollen
+  .end:
     ret
 
 term:
@@ -122,6 +144,23 @@ term:
   .divcall:
     call   div
     jmp    .look
+  .end:
+    ret
+
+expression:
+    call   term
+  .add_sub:
+    addp
+    je     .addcall
+    subp
+    je     .subcall
+    jmp    .end
+  .addcall:
+    call   add
+  .subcall:
+    call   sub
+    jmp    .add_sub
+
   .end:
     ret
 
@@ -230,21 +269,11 @@ create:
 ; initiation is over
 ;/////////////////////////////////////////////////
 
-    call   term
-  add_sub:
-    addp
-    je     addcall
-    subp
-    je     subcall
-    jmp    end
-  addcall:
-    call   add
-  subcall:
-    call   sub
-    jmp    add_sub
-
-  end:
-    jmp    exit
+expre:
+    call   expression
+    semicolonp
+    je     expre
+    jne    error
 
 ;/////////////////////////////////////////////////
 ;/////////////////////////////////////////////////
