@@ -26,6 +26,21 @@ section .data
     strdiv db "div ", 0
     strdiv_len equ $-strdiv-1
 
+    streax db "eax", 0
+    streax_len equ $-streax-1
+
+    strebx db "ebx", 0
+    strebx_len equ $-strebx-1
+
+    strpush db "push ", 0
+    strpush_len equ $-strpush-1
+
+    strpop db "pop ", 0
+    strpop_len equ $-strpop-1
+
+    strxchg db "xchg eax, ebx", 0
+    strxchg_len equ $-strxchg-1
+
 section .bss
     bufflen equ 1
     buffer resb bufflen
@@ -59,19 +74,128 @@ section .text
 ;-----------------------------------------------
 ; lookc:    read a single character and
 ;           ignore the spaces and newlines
-;           and jump to exit if end of file
+;
 ;
 %macro lookc 0
   %%read:
     readc
-    cmp    eax, 0
-    je     exit
     cmp    byte [buffer], 0x20
     je     %%read
     cmp    byte [buffer], 0xa
     je     %%read
 %endmacro
 
+%macro addp 0
+    cmp    byte [buffer], 0x2b
+%endmacro
+
+%macro subp 0
+    cmp    byte [buffer], 0x2d
+%endmacro
+
+%macro mulp 0
+    cmp    byte [buffer], 0x2a
+%endmacro
+
+%macro divp 0
+    cmp    byte [buffer], 0x2f
+%endmacro
+
+factor:
+    lookc
+    printn str1, str1_len
+    printn buffer, bufflen
+    printn eol, eollen
+    ret
+
+term:
+    call   factor
+  .look:
+    lookc
+    mulp
+    je     .mulcall
+    divp
+    je     .divcall
+    jmp    .end
+  .mulcall:
+    call   mul
+  .divcall:
+    call   div
+    jmp    .look
+  .end:
+    ret
+
+mul:
+    jne .end
+    printn strpush, strpush_len
+    printn streax, streax_len
+    printn eol, eollen
+    call   factor
+    printn strpop, strpop_len
+    printn strebx, strebx_len
+    printn eol, eollen
+
+    printn strmul, strmul_len
+    printn strebx, strebx_len
+    printn eol, eollen
+
+  .end:
+    ret
+
+div:
+    jne .end
+    printn strpush, strpush_len
+    printn streax, streax_len
+    printn eol, eollen
+    call   factor
+    printn strpop, strpop_len
+    printn strebx, strebx_len
+    printn eol, eollen
+
+    printn strxchg, strxchg_len
+    printn eol, eollen
+
+    printn strdiv, strdiv_len
+    printn strebx, strebx_len
+    printn eol, eollen
+
+  .end:
+    ret
+
+add:
+    jne    .end
+    printn strpush, strpush_len
+    printn streax, streax_len
+    printn eol, eollen
+    call   term
+    printn strpop, strpop_len
+    printn strebx, strebx_len
+    printn eol, eollen
+
+    printn stradd, stradd_len
+    printn eol, eollen
+
+  .end:
+    ret
+
+sub:
+    jne    .end
+    printn strpush, strpush_len
+    printn streax, streax_len
+    printn eol, eollen
+    call   term
+    printn strpop, strpop_len
+    printn strebx, strebx_len
+    printn eol, eollen
+
+    printn strxchg, strxchg_len
+    printn eol, eollen
+
+    printn strsub, strsub_len
+    printn eol, eollen
+
+  .end:
+    ret
     global _start
 
 _start:
@@ -106,83 +230,24 @@ create:
 ; initiation is over
 ;/////////////////////////////////////////////////
 
+    call   term
+  add_sub:
+    addp
+    je     addcall
+    subp
+    je     subcall
+    jmp    end
+  addcall:
+    call   add
+  subcall:
+    call   sub
+    jmp    add_sub
 
-precalc:
-    lookc
+  end:
+    jmp    exit
 
-    ; print("mov eax, ", buffer, "\n")
-    printn str1, str1_len
-    printn buffer, bufflen
-    printn eol, eollen
-
-calcjudge:
-    lookc
-
-    ; add(0x2b), sub(0x2d), mul(0x2a), div(0x2f)
-    cmp    byte [buffer], 0x2b
-    je     add
-    cmp    byte [buffer], 0x2d
-    je     sub
-    cmp    byte [buffer], 0x2a
-    je     mul
-    cmp    byte [buffer], 0x2f
-    je     div
-    jmp    error
-
-add:
-    lookc
-
-    ; print("mov ebx, ", buffer, "\n")
-    printn str2, str2_len
-    printn buffer, bufflen
-    printn eol, eollen
-
-    ; print("add eax, ebx", "\n")
-    printn stradd, stradd_len
-    printn eol, eollen
-
-    ; add is OK
-    jmp    precalc
-
-sub:
-    lookc
-
-    ; print("mov ebx, ", buffer, "\n")
-    printn str2, str2_len
-    printn buffer, bufflen
-    printn eol, eollen
-
-    ; print("sub eax, ebx", "\n")
-    printn strsub, strsub_len
-    printn eol, eollen
-
-    ; sub is OK
-    jmp    precalc
-
-mul:
-    lookc
-
-    ; print("mul eax, ", buffer, "\n")
-    printn strmul, strmul_len
-    printn buffer, bufflen
-    printn eol, eollen
-
-    ; mul is OK
-    jmp    precalc
-
-div:
-    lookc
-
-    ; print("div ", buffer, "\n")
-    printn strdiv, strdiv_len
-    printn buffer, bufflen
-    printn eol, eollen
-
-    ; div is OK
-    jmp    precalc
-
-;////////////////////////////////////////////////
-;////////////////////////////////////////////////
+;/////////////////////////////////////////////////
+;/////////////////////////////////////////////////
 
 error:
     mov    eax, 4
