@@ -38,8 +38,20 @@ section .data
     strpop db "pop ", 0
     strpop_len equ $-strpop-1
 
+    strmov db "mov ", 0
+    strmov_len equ $-strmov-1
+
+    strresd db "resd ", 0
+    strresd_len equ $-strresd-1
+
     strxchg db "xchg eax, ebx", 0
     strxchg_len equ $-strxchg-1
+
+    strbss db "section .bss", 0
+    strbss_len equ $-strbss-1
+
+    strtext db "section .text", 0
+    strtext_len equ $-strtext-1
 
 section .bss
     bufflen equ 1
@@ -115,6 +127,49 @@ section .text
     cmp    byte [buffer], 0x3b
 %endmacro
 
+%macro equp 0
+    cmp    byte [buffer], 0x3d
+%endmacro
+
+%macro upalphap 0
+    push   eax
+    lahf
+    and    ah, 0b10111111
+    sahf
+    cmp    byte [buffer], 0x41
+    jl     %%end
+    cmp    byte [buffer], 0x5a
+    jg     %%end
+    lahf
+    or     ah, 0b01000000
+    sahf
+  %%end:
+    pop    eax
+%endmacro
+
+%macro lowalphap 0
+    push   eax
+    lahf
+    and    ah, 0b10111111
+    sahf
+    cmp    byte [buffer], 0x61
+    jl     %%end
+    cmp    byte [buffer], 0x7a
+    jg     %%end
+    lahf
+    or     ah, 0b01000000
+    sahf
+  %%end:
+    pop    eax
+%endmacro
+
+%macro alphap 0
+    upalphap
+    je    %%end
+    lowalphap
+  %%end:
+%endmacro
+
 factor:
     lookc
     lpap
@@ -162,6 +217,22 @@ expression:
     jmp    .add_sub
 
   .end:
+    ret
+
+assignment:
+    lookc
+    alphap
+    jne    error
+    printn strbss, strbss_len
+    printn eol, eollen
+    printn strresd, strresd_len
+    printn buffer, bufflen
+    printn 1
+    printn eol, eollen
+    printn strtext, strtext_len
+    printn eol, eollen
+    call   expression
+    printn strmov, strmov_len
     ret
 
 mul:
