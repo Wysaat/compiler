@@ -147,6 +147,10 @@ section .text
     je     %%read
     cmp    byte [buffer], 0xa
     je     %%read
+    cmp    byte [buffer], 0x9
+    je     %%read
+    cmp    byte [buffer], 0xd
+    je     %%read
 %endmacro
 
 %macro addp 0
@@ -220,6 +224,16 @@ section .text
   %%end:
 %endmacro
 
+;------------------------------------------------
+;   underscore _ is counted as a letter in C
+;
+%macro letterp 0
+    alphap
+    je    %%end
+    cmp   byte [buffer], 0x5f
+  %%end:
+%endmacro
+
 %macro nump 0
     push   eax
     lahf
@@ -250,6 +264,18 @@ section .text
   %%end:
 %endmacro
 
+%macro escapep 0
+    cmp    byte [buffer], 0x20    ; space
+    je     %%end
+    cmp    byte [buffer], 0x9     ; tab
+    je     %%end
+    cmp    byte [buffer], 0xa     ; nl
+    je     %%end
+    cmp    byte [buffer], 0xd     ; cr
+    je     %%end
+  %%end:
+%endmacro
+
 factor:
     lookc
     lpap
@@ -257,7 +283,7 @@ factor:
     call   expression
     rpap
     je     .notend
-    jne    error
+    jne    .error
   .nopa:
     nump
     jne    .isidp
@@ -269,22 +295,33 @@ factor:
     jne    .end
     jmp    .print
   .isidp:
-    alphap
+    letterp
     jne    .error
+    puts   "mov eax, ["
   .print2:
     printn buffer, bufflen
-    lookc
+    readc
     alphanump
-    jne    .end
+    jne    .here
     jmp    .print2
+  .here:
+    puts   "]"
+    jmp    .end
   .notend:
     lookc
-    jmp    .end
+    jmp    .endnol
   .error:
     perrorl "error: in 'factor': invalid identifier"
     jmp    exit
   .end:
     puts   10
+  .endnol:
+    escapep
+    je     .look
+    jmp    .final
+  .look:
+    lookc
+  .final:
     ret
 
 term:
@@ -299,7 +336,6 @@ term:
     call   mul
   .divcall:
     call   div
-    lookc
     jmp    .look
   .end:
     ret
@@ -320,8 +356,6 @@ expression:
 
   .end:
     ret
-
-assignment:
 
 mul:
     jne .end
@@ -399,7 +433,10 @@ expre:
     call   expression
     semicolonp
     je     expre
-    jne    error
+    jne    .error
+  .error:
+    perrorl "error: in 'expre': expression not end with semicolon"
+    jmp    exit
 
 ;/////////////////////////////////////////////////
 ;/////////////////////////////////////////////////
