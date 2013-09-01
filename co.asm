@@ -14,6 +14,7 @@ section .data
 section .bss
     bufflen equ 1
     buffer resb bufflen
+    stringbuf resb 1
 
 section .text
 
@@ -22,6 +23,7 @@ section .text
 ;
 %macro puts 1
     pushfd
+    pushad
     jmp %%putscall
 
 %%putsmain:
@@ -40,6 +42,7 @@ section .text
     call %%putsmain
     db %1, 0
 %%end:
+    popad
     popfd
 %endmacro
 
@@ -47,6 +50,7 @@ section .text
 ; print:   puts to stdout
 ;
 %macro print 1
+    pushad
     jmp %%putscall
 
 %%putsmain:
@@ -65,12 +69,14 @@ section .text
     call %%putsmain
     db %1, 0
 %%end:
+    popad
 %endmacro
 
 ;-----------------------------------------------
 ; perror:   puts to stderr
 ;
 %macro perror 1
+    pushad
     jmp %%putscall
 
 %%putsmain:
@@ -89,6 +95,7 @@ section .text
     call %%putsmain
     db %1, 0
 %%end:
+    popad
 %endmacro
 
 ;-----------------------------------------------
@@ -113,11 +120,13 @@ section .text
 ; readc:    read a single character from infile
 ;
 %macro readc 0
+    pushad
     mov    eax, 3
     mov    ebx, ebp
     mov    ecx, buffer
     mov    edx, bufflen
     int    0x80
+    popad
 %endmacro
 
 ;-----------------------------------------------
@@ -126,12 +135,31 @@ section .text
 ;     number of characters in %2
 ;
 %macro printn 2
+    pushad
     mov    eax, 4
     mov    ebx, edi
     mov    ecx, %1
     mov    edx, %2
     int    0x80
+    popad
 %endmacro
+
+;-----------------------------------------------
+; print:    print a null terminated string to outfile
+; in:       %1: pointer to the string
+%macro print 1
+    pushad
+    mov    eax, 4
+    mov    ebx, edi
+    mov    ecx, %1
+    mov    edx, 1
+  %%write:
+    int    0x80
+    inc    ecx
+    cmp    [ecx], 0
+    jne    %%write
+    popad
+%%endmacro
 
 ;-----------------------------------------------
 ; lookc:    read a single character and
@@ -275,6 +303,54 @@ section .text
     je     %%end
   %%end:
 %endmacro
+
+identifier:
+    push   eax
+    push   ebx
+    lookc
+    letterp
+    mov    eax, byte [buffer]
+    mov    ebx, stringbuf
+    mov    byte [ebx], al
+    jne    .error
+  .read:
+    readc
+    alphanump
+    je     .store
+    jmp    .end
+  .store:
+    mov    eax, byte [buffer]
+    inc    ebx
+    mov    byte [ebx], al
+    jmp    .read
+  .error:
+    perrorl "error: in 'identifier': invalid identifier"
+    jmp    exit
+  .end:
+    escapep
+    je     .look
+    jmp    .final
+  .look:
+    lookc
+    jmp    .final
+  .final:
+    inc    ebx
+    mov    byte [ebx], 0
+    pop    ebx
+    pop    eax
+    ret
+
+assignment:
+    identifier
+    equp
+    jne    .error
+    expression
+    puts   "mov ["
+    print  stringbuf
+    putsl   "], byte eax"
+  .error:
+    perrorl "error: in 'assignment': should be a equal sign"
+    jmp    exit
 
 factor:
     lookc
