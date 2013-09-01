@@ -121,7 +121,7 @@ section .text
 %endmacro
 
 ;-----------------------------------------------
-; printc:    print n characters to outfile
+; printn:    print n characters to outfile
 ; in: pointer to characters in %1,
 ;     number of characters in %2
 ;
@@ -220,25 +220,76 @@ section .text
   %%end:
 %endmacro
 
+%macro nump 0
+    push   eax
+    lahf
+    and    ah, 0b10111111
+    sahf
+    cmp    byte [buffer], 0x30
+    jl     %%end
+    cmp    byte [buffer], 0x39
+    jg     %%end
+    lahf
+    or     ah, 0b01000000
+    sahf
+  %%end:
+    pop    eax
+%endmacro
+
+;------------------------------------------------
+; alphanump:  determine if the character is valid
+;             in a C identifier,
+;             underscore _ is counted as a letter
+;
+%macro alphanump 0
+    alphap
+    je     %%end
+    nump
+    je     %%end
+    cmp    byte [buffer], 0x5f
+  %%end:
+%endmacro
+
 factor:
     lookc
     lpap
     jne    .nopa
     call   expression
     rpap
-    je     .end
+    je     .notend
     jne    error
   .nopa:
+    nump
+    jne    .isidp
     puts   "mov eax, "
+  .print:
     printn buffer, bufflen
-    puts   10
+    readc
+    nump
+    jne    .end
+    jmp    .print
+  .isidp:
+    alphap
+    jne    .error
+  .print2:
+    printn buffer, bufflen
+    lookc
+    alphanump
+    jne    .end
+    jmp    .print2
+  .notend:
+    lookc
+    jmp    .end
+  .error:
+    perrorl "error: in 'factor': invalid identifier"
+    jmp    exit
   .end:
+    puts   10
     ret
 
 term:
     call   factor
   .look:
-    lookc
     mulp
     je     .mulcall
     divp
@@ -248,6 +299,7 @@ term:
     call   mul
   .divcall:
     call   div
+    lookc
     jmp    .look
   .end:
     ret
@@ -268,6 +320,8 @@ expression:
 
   .end:
     ret
+
+assignment:
 
 mul:
     jne .end
