@@ -59,6 +59,62 @@ section .bss
 
 section .text
 
+;----------------------------------------------
+; puts:    print a string to outfile
+;
+%macro puts 1
+    jmp %%putscall
+
+%%putsmain:
+    pop    ecx
+%%putsout:
+    mov    eax, 4
+    mov    ebx, edi                   ; outfile
+    mov    edx, 1
+    int    0x80
+    inc    ecx
+    cmp    byte [ecx], 0
+    jne    %%putsout
+    jmp    %%end
+
+%%putscall:
+    call %%putsmain
+    db %1, 0
+%%end:
+%endmacro
+
+;-----------------------------------------------
+; print:   puts to stdout
+;
+%macro puts 1
+    jmp %%putscall
+
+%%putsmain:
+    pop    ecx
+%%putsout:
+    mov    eax, 4
+    mov    ebx, 1                       ; stdout
+    mov    edx, 1
+    int    0x80
+    inc    ecx
+    cmp    byte [ecx], 0
+    jne    %%putsout
+    jmp    %%end
+
+%%putscall:
+    call %%putsmain
+    db %1, 0
+%%end:
+%endmacro
+
+;-----------------------------------------------
+; putsl:    print a string with a new line (0xa)
+;
+%macro putsl 1
+    puts %1
+    puts 10
+%endmacro
+
 ;-----------------------------------------------
 ; readc:    read a single character from infile
 ;
@@ -219,55 +275,26 @@ expression:
   .end:
     ret
 
-assignment:
-    lookc
-    alphap
-    jne    error
-    printn strbss, strbss_len
-    printn eol, eollen
-    printn strresd, strresd_len
-    printn buffer, bufflen
-    printn 1
-    printn eol, eollen
-    printn strtext, strtext_len
-    printn eol, eollen
-    call   expression
-    printn strmov, strmov_len
-    ret
-
 mul:
     jne .end
-    printn strpush, strpush_len
-    printn streax, streax_len
-    printn eol, eollen
+    putsl  "push eax"
     call   factor
-    printn strpop, strpop_len
-    printn strebx, strebx_len
-    printn eol, eollen
+    putsl  "pop ebx"
 
-    printn strmul, strmul_len
-    printn strebx, strebx_len
-    printn eol, eollen
+    putsl  "mul ebx"
 
   .end:
     ret
 
 div:
     jne .end
-    printn strpush, strpush_len
-    printn streax, streax_len
-    printn eol, eollen
+    putsl  "push eax"
     call   factor
-    printn strpop, strpop_len
-    printn strebx, strebx_len
-    printn eol, eollen
+    putsl  "pop ebx"
 
-    printn strxchg, strxchg_len
-    printn eol, eollen
+    putsl  "xchg eax, ebx"
 
-    printn strdiv, strdiv_len
-    printn strebx, strebx_len
-    printn eol, eollen
+    putsl   "div ebx"
 
   .end:
     ret
