@@ -6,50 +6,32 @@ add eax, ebx
 push eax
 mov eax, 4
 pop ebx
-xchg eax, ebx
-div ebx
-mov eax, 5
-push eax
-mov eax, 4
-push eax
-mov eax, 4
-pop ebx
-xchg eax, ebx
-div ebx
-pop ebx
-add eax, ebx
+mul ebx
 mov eax, 3
 push eax
-mov eax, 9
+mov eax, 7
 pop ebx
-mul ebx
-push eax
-mov eax, 2
-pop ebx
-xchg eax, ebx
-div ebx
-push eax
-mov eax, 4
-pop ebx
-mul ebx
-push eax
-mov eax, 5
+add eax, ebx
 push eax
 mov eax, 8
-pop ebx
-mul ebx
-push eax
-mov eax, 8
-pop ebx
-mul ebx
-push eax
-mov eax, 2
 pop ebx
 xchg eax, ebx
 sub eax, ebx
 push eax
-mov eax, 3
+mov eax, 8
 pop ebx
-add eax, ebx
+xchg eax, ebx
+div ebx
+push eax
+mov eax, 6
+pop ebx
+mul ebx
+push eax
+mov eax, 2
+push eax
+mov eax, 7
+pop ebx
+xchg eax, ebx
+sub eax, ebx
 pop ebx
 add eax, ebx

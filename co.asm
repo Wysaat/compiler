@@ -5,48 +5,6 @@ section .data
     usgmsg db "usage: co <source_file>", 13, 10, 0
     usglen equ $-usgmsg-1
 
-    eol  db 13, 10, 0
-    eollen equ $-eol-1
-
-    str1 db "mov eax, ", 0
-    str1_len equ $-str1-1
-
-    str2 db "mov ebx, ", 0
-    str2_len equ $-str2-1
-
-    stradd db "add eax, ebx", 0
-    stradd_len equ $-stradd-1
-
-    strsub db "sub eax, ebx", 0
-    strsub_len equ $-strsub-1
-
-    strmul db "mul ", 0
-    strmul_len equ $-strmul-1
-
-    strdiv db "div ", 0
-    strdiv_len equ $-strdiv-1
-
-    streax db "eax", 0
-    streax_len equ $-streax-1
-
-    strebx db "ebx", 0
-    strebx_len equ $-strebx-1
-
-    strpush db "push ", 0
-    strpush_len equ $-strpush-1
-
-    strpop db "pop ", 0
-    strpop_len equ $-strpop-1
-
-    strmov db "mov ", 0
-    strmov_len equ $-strmov-1
-
-    strresd db "resd ", 0
-    strresd_len equ $-strresd-1
-
-    strxchg db "xchg eax, ebx", 0
-    strxchg_len equ $-strxchg-1
-
     strbss db "section .bss", 0
     strbss_len equ $-strbss-1
 
@@ -63,6 +21,7 @@ section .text
 ; puts:    print a string to outfile
 ;
 %macro puts 1
+    pushfd
     jmp %%putscall
 
 %%putsmain:
@@ -81,12 +40,13 @@ section .text
     call %%putsmain
     db %1, 0
 %%end:
+    popfd
 %endmacro
 
 ;-----------------------------------------------
 ; print:   puts to stdout
 ;
-%macro puts 1
+%macro print 1
     jmp %%putscall
 
 %%putsmain:
@@ -108,11 +68,45 @@ section .text
 %endmacro
 
 ;-----------------------------------------------
+; perror:   puts to stderr
+;
+%macro perror 1
+    jmp %%putscall
+
+%%putsmain:
+    pop    ecx
+%%putsout:
+    mov    eax, 4
+    mov    ebx, 2                       ; stderr
+    mov    edx, 1
+    int    0x80
+    inc    ecx
+    cmp    byte [ecx], 0
+    jne    %%putsout
+    jmp    %%end
+
+%%putscall:
+    call %%putsmain
+    db %1, 0
+%%end:
+%endmacro
+
+;-----------------------------------------------
 ; putsl:    print a string with a new line (0xa)
 ;
 %macro putsl 1
     puts %1
     puts 10
+%endmacro
+
+%macro printl 1
+    print %1
+    print 10
+%endmacro
+
+%macro perrorl 1
+    perror %1
+    perror 10
 %endmacro
 
 ;-----------------------------------------------
@@ -235,9 +229,9 @@ factor:
     je     .end
     jne    error
   .nopa:
-    printn str1, str1_len
+    puts   "mov eax, "
     printn buffer, bufflen
-    printn eol, eollen
+    puts   10
   .end:
     ret
 
@@ -280,9 +274,7 @@ mul:
     putsl  "push eax"
     call   factor
     putsl  "pop ebx"
-
     putsl  "mul ebx"
-
   .end:
     ret
 
@@ -291,48 +283,30 @@ div:
     putsl  "push eax"
     call   factor
     putsl  "pop ebx"
-
     putsl  "xchg eax, ebx"
-
     putsl   "div ebx"
-
   .end:
     ret
 
 add:
     jne    .end
-    printn strpush, strpush_len
-    printn streax, streax_len
-    printn eol, eollen
+    putsl  "push eax"
     call   term
-    printn strpop, strpop_len
-    printn strebx, strebx_len
-    printn eol, eollen
-
-    printn stradd, stradd_len
-    printn eol, eollen
-
+    putsl  "pop ebx"
+    putsl  "add eax, ebx"
   .end:
     ret
 
 sub:
     jne    .end
-    printn strpush, strpush_len
-    printn streax, streax_len
-    printn eol, eollen
+    putsl  "push eax"
     call   term
-    printn strpop, strpop_len
-    printn strebx, strebx_len
-    printn eol, eollen
-
-    printn strxchg, strxchg_len
-    printn eol, eollen
-
-    printn strsub, strsub_len
-    printn eol, eollen
-
+    putsl  "pop ebx"
+    putsl  "xchg eax, ebx"
+    putsl  "sub eax, ebx"
   .end:
     ret
+
     global _start
 
 _start:
