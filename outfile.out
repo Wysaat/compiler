@@ -8,4 +8,74 @@ mov eax, 316
 pop ebx
 xchg eax, ebx
 div ebx
-mov dword [b
+mov dword [bb], eax
+mov eax, dword [ddd]
+push eax
+mov eax, 87
+pop ebx
+add eax, ebx
+push eax
+mov eax, 2
+pop ebx
+xchg eax, ebx
+div ebx
+push eax
+mov eax, dword [a8]
+pop ebx
+mul ebx
+mov dword [ggg], eax
+mov eax, 5
+push eax
+mov eax, 4
+pop ebx
+add eax, ebx
+push eax
+mov eax, 4
+pop ebx
+mul ebx
+mov dword [f32], eax
+mov eax, 3
+push eax
+mov eax, 7
+pop ebx
+add eax, ebx
+push eax
+mov eax, 8
+pop ebx
+xchg eax, ebx
+sub eax, ebx
+push eax
+mov eax, 8
+pop ebx
+xchg eax, ebx
+div ebx
+push eax
+mov eax, 6
+pop ebx
+mul ebx
+push eax
+mov eax, 2
+push eax
+mov eax, 7
+pop ebx
+xchg eax, ebx
+sub eax, ebx
+pop ebx
+add eax, ebx
+mov dword [_8d], eax
+mov eax, 8
+push eax
+mov eax, 3
+pop ebx
+xchg eax, ebx
+div ebx
+push eax
+mov eax, dword [_f432fdsAF]
+pop ebx
+add eax, ebx
+push eax
+mov eax, 888
+pop ebx
+xchg eax, ebx
+sub eax, ebx
+mov dword [jklm], eax

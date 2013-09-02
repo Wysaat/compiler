@@ -149,11 +149,11 @@ section .text
 ; in:       %1: pointer to the string
 %macro print 1
     pushad
+    mov    ecx, %1
+  %%write:
     mov    eax, 4
     mov    ebx, edi
-    mov    ecx, %1
     mov    edx, 1
-  %%write:
     int    0x80
     inc    ecx
     cmp    byte [ecx], 0
@@ -347,7 +347,7 @@ assignment:
     call   expression
     puts   "mov dword ["
     print  stringbuf
-    putsl   "], eax"
+    putsl  "], eax"
     ret
   .error:
     perrorl "error: in 'assignment': should be a equal sign"
