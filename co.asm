@@ -47,9 +47,9 @@ section .text
 %endmacro
 
 ;-----------------------------------------------
-; print:   puts to stdout
+; pstdout:   puts to stdout
 ;
-%macro print 1
+%macro pstdout 1
     pushad
     jmp %%putscall
 
@@ -106,7 +106,7 @@ section .text
     puts 10
 %endmacro
 
-%macro printl 1
+%macro pstdoutl 1
     print %1
     print 10
 %endmacro
@@ -156,10 +156,10 @@ section .text
   %%write:
     int    0x80
     inc    ecx
-    cmp    [ecx], 0
+    cmp    byte [ecx], 0
     jne    %%write
     popad
-%%endmacro
+%endmacro
 
 ;-----------------------------------------------
 ; lookc:    read a single character and
@@ -309,7 +309,7 @@ identifier:
     push   ebx
     lookc
     letterp
-    mov    eax, byte [buffer]
+    mov    al, byte [buffer]
     mov    ebx, stringbuf
     mov    byte [ebx], al
     jne    .error
@@ -319,7 +319,7 @@ identifier:
     je     .store
     jmp    .end
   .store:
-    mov    eax, byte [buffer]
+    mov    al, byte [buffer]
     inc    ebx
     mov    byte [ebx], al
     jmp    .read
@@ -341,13 +341,14 @@ identifier:
     ret
 
 assignment:
-    identifier
+    call   identifier
     equp
     jne    .error
-    expression
-    puts   "mov ["
+    call   expression
+    puts   "mov dword ["
     print  stringbuf
-    putsl   "], byte eax"
+    putsl   "], eax"
+    ret
   .error:
     perrorl "error: in 'assignment': should be a equal sign"
     jmp    exit
@@ -373,7 +374,7 @@ factor:
   .isidp:
     letterp
     jne    .error
-    puts   "mov eax, ["
+    puts   "mov eax, dword ["
   .print2:
     printn buffer, bufflen
     readc
@@ -505,13 +506,13 @@ create:
 ; initiation is over
 ;/////////////////////////////////////////////////
 
-expre:
-    call   expression
+assign:
+    call   assignment
     semicolonp
-    je     expre
+    je     assign
     jne    .error
   .error:
-    perrorl "error: in 'expre': expression not end with semicolon"
+    perrorl "error: in 'assignment': expression not end with semicolon"
     jmp    exit
 
 ;/////////////////////////////////////////////////
