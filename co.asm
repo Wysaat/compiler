@@ -15,6 +15,7 @@ section .bss
     bufflen equ 1
     buffer resb bufflen
     stringbuf resb 1
+    wordbuf resb 1
 
 section .text
 
@@ -131,6 +132,25 @@ section .text
     popad
 %endmacro
 
+;----------------------------------------------
+; readword:    read a null terminated word
+;              to wordbuf
+;
+%macro readword 1
+    pushad
+    mov    ecx, wordbuf
+  %%read:
+    mov    eax, 3
+    mov    ebx, ebp
+    mov    edx, 1
+    int    0x80
+    cmp    [ecx], 0
+    inc    ecx
+    jne    %%read
+    mov    [ecx], 0
+    popad
+%%macro
+
 ;-----------------------------------------------
 ; printn:    print n characters to outfile
 ; in: pointer to characters in %1,
@@ -179,6 +199,23 @@ section .text
     je     %%read
     cmp    byte [buffer], 0xd
     je     %%read
+%endmacro
+
+;------------------------------------------------
+;  compare:
+;
+%macro cmp 2
+    popad
+    cld
+    mov    esi, %1
+    mov    edi, %2
+  %%comp:
+    cmpsb
+    jne    %%end
+    cmp    [esi-1], 0
+    je     %%end
+    jne    %%comp
+  %%end:
 %endmacro
 
 %macro addp 0
