@@ -126,6 +126,8 @@ section .text
     mov    ecx, buffer
     mov    edx, bufflen
     int    0x80
+    cmp    eax, 0
+    je     exit
     popad
 %endmacro
 
@@ -169,8 +171,6 @@ section .text
 %macro lookc 0
   %%read:
     readc
-    cmp    eax, 0
-    je     exit
     cmp    byte [buffer], 0x20
     je     %%read
     cmp    byte [buffer], 0xa
