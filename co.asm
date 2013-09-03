@@ -11,11 +11,12 @@ section .data
     strtext db "section .text", 0
     strtext_len equ $-strtext-1
 
+    k_int db "int", 0
+
 section .bss
     bufflen equ 1
     buffer resb bufflen
     stringbuf resb 1
-    wordbuf resb 1
 
 section .text
 
@@ -134,7 +135,7 @@ section .text
 
 ;----------------------------------------------
 ; readword:    read a null terminated word
-;              to wordbuf
+;              to stringbuf
 ;
 %macro readword 1
     pushad
@@ -377,6 +378,29 @@ identifier:
     pop    eax
     ret
 
+declaration:
+    readword
+    compare stringbuf, k_int
+    jne     .end
+    call    identifier
+    putsl   "section .bss"
+    puts    stringbuf
+    puts    "resb 4"
+    semicolonp
+    je      .end
+    equp
+    jne     .error
+    call    expression
+    puts    "mov dword ["
+    print   stringbuf
+    puts    "], eax"
+    jmp     .end
+  .error:
+    perrorl "error: in 'declaration': bad ending"
+    jmp     exit
+  .end:
+    ret
+
 assignment:
     call   identifier
     equp
@@ -542,7 +566,10 @@ create:
 ;/////////////////////////////////////////////////
 ; initiation is over
 ;/////////////////////////////////////////////////
-
+    readword
+    compare stringbuf, k_int
+    je     declare
+    jne    assign
 assign:
     call   assignment
     semicolonp
