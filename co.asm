@@ -134,24 +134,38 @@ section .text
 %endmacro
 
 ;----------------------------------------------
-; readword:    read until first nonalphanumeric
-;              char to stringbuf
+; readword:    read from nonspace until first
+;              nonalphanumeric char to stringbuf
 ;              (caution: buffer is changed)
 ;
 %macro readword 0
     pushad
-    mov    ecx, stringbuf
+    mov    ecx, buffer
+    mov    eax, stringbuf
+    push   eax
+    lookc
+    jmp    %%write
   %%read:
+    push   eax
     mov    eax, 3
     mov    ebx, ebp
     mov    edx, 1
     int    0x80
-    mov    al, byte [ecx]
-    mov    byte [buffer], al
     alphanump
-    inc    ecx
-    je     %%read
-    mov    byte [ecx], 0
+    ;----------------------------------------------
+    ; must check zf right after comparing
+    ;----------------------------------------------
+    jne    %%end
+  %%write:
+    pop    eax
+    mov    bl, byte [buffer]
+    mov    byte [eax], bl
+    inc    eax
+    jmp    %%read
+
+%%end:
+    pop    eax
+    mov    byte [eax], 0
     popad
 %endmacro
 
@@ -209,7 +223,7 @@ section .text
 ;  compare:
 ;
 %macro compare 2
-    popad
+    pushad
     cld
     mov    esi, %1
     mov    edi, %2
@@ -220,6 +234,7 @@ section .text
     je     %%end
     jne    %%comp
   %%end:
+    popad
 %endmacro
 
 %macro addp 0
@@ -384,15 +399,18 @@ identifier:
 declaration:
     readword
     compare stringbuf, k_int
-    jne     .assign
+    jne     .wait
   .declare:
+    readword
     putsl   "section .bss"
     print   stringbuf
-    puts    "resb 4"
-    puts    "section .text"
-    readword
-  .assign:
+    putsl   " resb 4"
+    putsl   "section .text"
+  .wait:
+    escapep
+    jne    .assign
     lookc
+  .assign:
     semicolonp
     je      .end
     call    expression
@@ -574,7 +592,7 @@ declare:
     je     declare
     jne    .error
   .error:
-    perrorl "error: in 'assignment': expression not end with semicolon"
+    perrorl "error: in 'declare': expression not end with semicolon"
     jmp    exit
 
 ;/////////////////////////////////////////////////

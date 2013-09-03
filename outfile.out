@@ -1,0 +1,18 @@
+section .bss
+var1 resb 4
+section .text
+mov eax, 3
+mov dword [var1], eax
+section .bss
+var2 resb 4
+section .text
+mov eax, 3
+push eax
+mov eax, dword [var1]
+pop ebx
+mul ebx
+push eax
+mov eax, 8
+pop ebx
+add eax, ebx
+mov dword [var2], eax
