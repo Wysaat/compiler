@@ -134,23 +134,26 @@ section .text
 %endmacro
 
 ;----------------------------------------------
-; readword:    read a null terminated word
-;              to stringbuf
+; readword:    read until first nonalphanumeric
+;              char to stringbuf
+;              (caution: buffer is changed)
 ;
-%macro readword 1
+%macro readword 0
     pushad
-    mov    ecx, wordbuf
+    mov    ecx, stringbuf
   %%read:
     mov    eax, 3
     mov    ebx, ebp
     mov    edx, 1
     int    0x80
-    cmp    [ecx], 0
+    mov    al, byte [ecx]
+    mov    byte [buffer], al
+    alphanump
     inc    ecx
-    jne    %%read
-    mov    [ecx], 0
+    je     %%read
+    mov    byte [ecx], 0
     popad
-%%macro
+%endmacro
 
 ;-----------------------------------------------
 ; printn:    print n characters to outfile
@@ -205,7 +208,7 @@ section .text
 ;------------------------------------------------
 ;  compare:
 ;
-%macro cmp 2
+%macro compare 2
     popad
     cld
     mov    esi, %1
@@ -213,7 +216,7 @@ section .text
   %%comp:
     cmpsb
     jne    %%end
-    cmp    [esi-1], 0
+    cmp    byte [esi-1], 0
     je     %%end
     jne    %%comp
   %%end:
@@ -381,23 +384,21 @@ identifier:
 declaration:
     readword
     compare stringbuf, k_int
-    jne     .end
-    call    identifier
+    jne     .assign
+  .declare:
     putsl   "section .bss"
-    puts    stringbuf
+    print   stringbuf
     puts    "resb 4"
+    puts    "section .text"
+    readword
+  .assign:
+    lookc
     semicolonp
     je      .end
-    equp
-    jne     .error
     call    expression
     puts    "mov dword ["
     print   stringbuf
-    puts    "], eax"
-    jmp     .end
-  .error:
-    perrorl "error: in 'declaration': bad ending"
-    jmp     exit
+    putsl   "], eax"
   .end:
     ret
 
@@ -566,14 +567,11 @@ create:
 ;/////////////////////////////////////////////////
 ; initiation is over
 ;/////////////////////////////////////////////////
-    readword
-    compare stringbuf, k_int
-    je     declare
-    jne    assign
-assign:
-    call   assignment
+
+declare:
+    call   declaration
     semicolonp
-    je     assign
+    je     declare
     jne    .error
   .error:
     perrorl "error: in 'assignment': expression not end with semicolon"
