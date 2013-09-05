@@ -16,3 +16,7 @@ mov eax, 8
 pop ebx
 add eax, ebx
 mov dword [var2], eax
+section .bss
+fchar resb 1
+section .text
+mov [fchar], 'a'

@@ -12,6 +12,7 @@ section .data
     strtext_len equ $-strtext-1
 
     k_int db "int", 0
+    k_char db "char", 0
 
 section .bss
     bufflen equ 1
@@ -269,6 +270,10 @@ section .text
     cmp    byte [buffer], 0x3d
 %endmacro
 
+%macro squotep 0
+    cmp    byet [buffer], 0x27
+%endmacro
+
 %macro upalphap 0
     push   eax
     lahf
@@ -396,10 +401,39 @@ identifier:
     pop    eax
     ret
 
+chardeclare:
+    readword
+    cmp    stringbuf, 0x2a     ; if read *
+    putsl  "section .bss"
+    print  stringbuf
+    putsl  " resb 1"
+    putsl  "section .text"
+    escapep
+    je     .read
+  .read:
+    lookc
+    semicolonp
+    je     .end
+    lookc                      ; read left single quote
+    lookc
+    puts    "mov byte ["
+    print   stringbuf
+    puts    "], '"
+    printn  buffer, bufflen
+    putsl   "'"
+    lookc                      ; read right single quote
+    lookc                      ; read ;
+  .end:
+    ret
+
 declaration:
     readword
     compare stringbuf, k_int
+    je      .declare
+    compare stringbuf, k_char
     jne     .wait
+    call    chardeclare
+    jmp     .end
   .declare:
     readword
     putsl   "section .bss"
